@@ -66,4 +66,4 @@ class ColetorDados:
 if __name__ == "__main__":
     app = ColetorDados()
     # Mude a letra aqui sempre que for coletar uma nova
-    app.coletar(letra="D")
+    app.coletar(letra="Z")
