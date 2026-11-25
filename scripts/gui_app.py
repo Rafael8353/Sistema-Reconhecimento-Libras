@@ -648,6 +648,7 @@ class AplicativoLibras(ctk.CTk):
             fg_color=COR_CARTAO_2, border_color=COR_BORDA, placeholder_text="Seu nome")
         self.entry_pessoa_coleta.grid(row=1, column=0, sticky="ew", padx=18)
         self.entry_pessoa_coleta.bind("<KeyRelease>", lambda _e: self._atualizar_contagem_coleta())
+        self.entry_pessoa_coleta.bind("<Return>", lambda _e: self.focus_set())
 
         self.seletor_tipo_coleta = ctk.CTkSegmentedButton(
             painel, values=list(TIPOS_COLETA), variable=self.var_tipo_coleta,
@@ -1202,6 +1203,9 @@ class AplicativoLibras(ctk.CTk):
     def _selecionar_letra_coleta(self, letra):
         if self._gravando_dinamico:
             return
+        # tira o foco do campo Pessoa: sem isso, a barra de espaco (atalho
+        # para salvar) escreveria espacos no nome em vez de salvar amostras
+        self.focus_set()
         self.var_letra_coleta.set(letra)
         self._pintar_letra_selecionada()
         self._pode_desfazer_coleta = False
