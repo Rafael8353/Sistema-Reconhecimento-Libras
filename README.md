@@ -76,7 +76,14 @@ No topo desta página, clique em **Fork** para criar uma cópia do projeto na su
 
 ### 2. Colete seus sinais
 
-Abra o aplicativo, ligue a câmera e vá até a tela **Coletar**:
+Abra o aplicativo, ligue a câmera e vá até a tela **Coletar**.
+
+Não conhece ou não lembra algum sinal? Use estes vídeos de referência:
+
+- [Alfabeto em Libras](https://www.youtube.com/watch?v=ARX0sl6apCw)
+- [Números em Libras](https://www.youtube.com/watch?v=TFtme0cvf28): colete só os números **cardinais** (de 0 a 9). Os números quantitativos que aparecem no vídeo não são usados no projeto.
+
+Depois:
 
 1. Em **Pessoa**, escreva seu primeiro nome ou um apelido. Use sempre o mesmo nome.
 2. **Letras:** para cada letra, faça o sinal e aperte a barra de espaço até juntar cerca de **100 amostras**. Enquanto aperta, mexa a mão de leve: um pouco mais perto e mais longe, um pouco girada para os lados.
