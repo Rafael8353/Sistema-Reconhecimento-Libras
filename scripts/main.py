@@ -1,66 +1,60 @@
+"""
+main.py
+
+Versao simples (janela do OpenCV) do tradutor de Libras em tempo real.
+Util para testes rapidos sem abrir a interface grafica completa.
+
+Para a versao com interface grafica (CustomTkinter, com area de texto
+acumulando letras em palavras, botoes de iniciar/pausar, seletores de
+configuracao, etc - o "próximo passo" descrito no TCC1), veja
+scripts/gui_app.py.
+
+A logica de reconhecimento (MediaPipe + normalizacao + modelo + buffer
+de estabilidade) vive em motor_reconhecimento.py e e compartilhada pelas
+duas versoes, para nao haver duas implementacoes que podem divergir.
+"""
+
 import cv2
-import mediapipe as mp
-import pickle
-import numpy as np
-import pyttsx3
-import threading
+
+from audio_async import FalanteAssincrono
+from motor_reconhecimento import MotorReconhecimento
+
 
 class TradutorLibras:
     def __init__(self, model_path='models/modelo_libras.pkl'):
-        # 1. Configurar Áudio (Text-to-Speech)
-        self.engine = pyttsx3.init()
-        
-        # 2. Carregar o Cérebro (Modelo)
-        with open(model_path, 'rb') as f:
-            self.model = pickle.dump = pickle.load(f)
-
-        # 3. Configurar Visão
-        self.mp_hands = mp.solutions.hands
-        self.hands = self.mp_hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.8)
-        self.mp_drawing = mp.solutions.drawing_utils
-        
-        self.ultima_letra = ""
-
-    def falar(self, texto):
-        """Função para falar sem travar o vídeo (usando Threads)"""
-        def thread_fala():
-            self.engine.say(texto)
-            self.engine.runAndWait()
-        threading.Thread(target=thread_fala).start()
+        self.motor = MotorReconhecimento(model_path=model_path)
+        self.falante = FalanteAssincrono()
 
     def iniciar(self):
         cap = cv2.VideoCapture(0)
-        print("Tradutor Iniciado! Posicione a mão na câmera.")
+        print("Tradutor Iniciado! Posicione a mao na camera. Pressione 'Q' para sair.")
 
         while cap.isOpened():
             success, frame = cap.read()
-            if not success: break
+            if not success:
+                break
 
             frame = cv2.flip(frame, 1)
-            img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            resultado = self.hands.process(img_rgb)
+            info = self.motor.processar_frame(frame)
 
-            if resultado.multi_hand_landmarks:
-                for hand_lms in resultado.multi_hand_landmarks:
-                    self.mp_drawing.draw_landmarks(frame, hand_lms, self.mp_hands.HAND_CONNECTIONS)
-                    
-                    # Extrair coordenadas para a predição
-                    coords = []
-                    for lm in hand_lms.landmark:
-                        coords.extend([lm.x, lm.y])
-                    
-                    # 4. A IA tenta adivinhar a letra
-                    predicao = self.model.predict([coords])
-                    letra_detectada = predicao[0]
+            if info["letra_atual"]:
+                confiante = info["confianca_atual"] >= self.motor.confianca_minima
+                cor = (0, 255, 0) if confiante else (0, 165, 255)
+                cv2.putText(frame, f"Letra: {info['letra_atual']} ({info['confianca_atual']*100:.0f}%)",
+                            (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1.6, cor, 3)
+            cv2.putText(frame, f"Falada: {self.motor.ultima_letra_estavel}", (50, 150),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 0), 2)
 
-                    # Exibir na tela
-                    cv2.putText(frame, f"Letra: {letra_detectada}", (50, 100), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 3)
+            # Top-3 previsoes (util para diagnosticar letras que nao sao
+            # bem reconhecidas: mostra se a letra certa aparece em 2o/3o
+            # lugar, o que aponta para confusao com outra letra parecida)
+            if info["top3"]:
+                texto_top3 = "  ".join(f"{letra}:{conf*100:.0f}%" for letra, conf in info["top3"])
+                cv2.putText(frame, texto_top3, (50, 190),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
 
-                    # 5. Se a letra mudou, o sistema fala
-                    if letra_detectada != self.ultima_letra:
-                        self.falar(letra_detectada)
-                        self.ultima_letra = letra_detectada
+            if info["letra_nova_estavel"]:
+                self.falante.falar(info["letra_nova_estavel"])
 
             cv2.imshow("TCC Libras - TRADUTOR", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -68,6 +62,9 @@ class TradutorLibras:
 
         cap.release()
         cv2.destroyAllWindows()
+        self.falante.parar()
+        self.motor.fechar()
+
 
 if __name__ == "__main__":
     app = TradutorLibras()

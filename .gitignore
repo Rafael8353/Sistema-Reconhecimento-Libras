@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Banco local com o histórico de treinos (criado automaticamente)
+sistema_libras.db
+*.db-journal
+
+# Backups automáticos criados ao apagar, migrar ou importar amostras
+data/*_backup_*.csv
